@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>国技元启 - 项目管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        .sidebar-item:hover { background: rgba(59, 130, 246, 0.1); }
+        .sidebar-item.active { background: rgba(59, 130, 246, 0.15); border-right: 3px solid #3b82f6; }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
+        .status-badge { @apply px-2 py-1 rounded-full text-xs font-medium; }
+        .priority-high { @apply bg-red-100 text-red-700; }
+        .priority-medium { @apply bg-yellow-100 text-yellow-700; }
+        .priority-low { @apply bg-green-100 text-green-700; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <!-- 侧边栏 -->
+        <aside class="w-64 bg-white shadow-lg">
+            <div class="p-6 border-b">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-cube text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-gray-800">国技元启</h1>
+                        <p class="text-xs text-gray-500">项目管理系统</p>
+                    </div>
+                </div>
+            </div>
+            <nav class="p-4">
+                <a href="#dashboard" onclick="showPage('dashboard')" class="sidebar-item active flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 transition-all">
+                    <i class="fas fa-chart-dashboard w-5"></i>
+                    <span>数据看板</span>
+                </a>
+                <a href="#projects" onclick="showPage('projects')" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 transition-all mt-1">
+                    <i class="fas fa-folder-open w-5"></i>
+                    <span>项目管理</span>
+                </a>
+                <a href="#clients" onclick="showPage('clients')" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 transition-all mt-1">
+                    <i class="fas fa-users w-5"></i>
+                    <span>客户管理</span>
+                </a>
+                <a href="#finance" onclick="showPage('finance')" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 transition-all mt-1">
+                    <i class="fas fa-coins w-5"></i>
+                    <span>财务统计</span>
+                </a>
+                <a href="#settings" onclick="showPage('settings')" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 transition-all mt-1">
+                    <i class="fas fa-cog w-5"></i>
+                    <span>系统设置</span>
+                </a>
+            </nav>
+            <div class="absolute bottom-0 w-64 p-4 border-t bg-white">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-gray-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium">管理员</p>
+                        <p class="text-xs text-gray-500">admin@gjyq.com</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="flex-1 overflow-auto">
+            <!-- 顶部栏 -->
+            <header class="bg-white shadow-sm px-8 py-4 flex justify-between items-center">
+                <h2 id="page-title" class="text-xl font-bold text-gray-800">数据看板</h2>
+                <div class="flex items-center gap-4">
+                    <button class="relative p-2 text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-bell"></i>
+                        <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                    </button>
+                    <button onclick="logout()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">
+                        <i class="fas fa-sign-out-alt mr-2"></i>退出
+                    </button>
+                </div>
+            </header>
+
+            <!-- 页面内容 -->
+            <div id="content" class="p-8">
+                <!-- Dashboard 页面 -->
+                <div id="dashboard-page" class="page">
+                    <!-- 统计卡片 -->
+                    <div class="grid grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-xl shadow-sm card-hover transition-all">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-gray-500 text-sm">项目总数</p>
+                                    <p class="text-3xl font-bold text-gray-800 mt-2" id="stat-total">0</p>
+                                </div>
+                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-project-diagram text-blue-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm card-hover transition-all">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-gray-500 text-sm">总预算</p>
+                                    <p class="text-3xl font-bold text-gray-800 mt-2"><span id="stat-budget">0</span><span class="text-lg">万</span></p>
+                                </div>
+                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-yen-sign text-green-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm card-hover transition-all">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-gray-500 text-sm">进行中</p>
+                                    <p class="text-3xl font-bold text-blue-600 mt-2" id="stat-progress">0</p>
+                                </div>
+                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-spinner text-blue-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm card-hover transition-all">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-gray-500 text-sm">本月新增</p>
+                                    <p class="text-3xl font-bold text-purple-600 mt-2" id="stat-month">0</p>
+                                </div>
+                                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-plus-circle text-purple-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 图表区域 -->
+                    <div class="grid grid-cols-2 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="font-bold text-gray-800 mb-4">项目类型分布</h3>
+                            <div id="typeChart" style="height: 300px;"></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="font-bold text-gray-800 mb-4">项目状态分布</h3>
+                            <div id="statusChart" style="height: 300px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 月度趋势 -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm mb-8">
+                        <h3 class="font-bold text-gray-800 mb-4">月度项目趋势</h3>
+                        <div id="monthChart" style="height: 300px;"></div>
+                    </div>
+
+                    <!-- 最近项目 -->
+                    <div class="bg-white rounded-xl shadow-sm">
+                        <div class="p-6 border-b flex justify-between items-center">
+                            <h3 class="font-bold text-gray-800">最近项目</h3>
+                            <a href="#projects" onclick="showPage('projects')" class="text-blue-600 text-sm hover:underline">查看全部</a>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">项目编号</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">项目名称</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">客户</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">预算</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-projects" class="divide-y divide-gray-100">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 项目管理页面 -->
+                <div id="projects-page" class="page hidden">
+                    <div class="bg-white rounded-xl shadow-sm">
+                        <div class="p-6 border-b flex justify-between items-center">
+                            <div class="flex gap-4">
+                                <input type="text" id="search-input" placeholder="搜索项目..." class="px-4 py-2 border rounded-lg w-64">
+                                <select id="filter-status" class="px-4 py-2 border rounded-lg">
+                                    <option value="">全部状态</option>
+                                    <option value="status_1">待启动</option>
+                                    <option value="status_2">进行中</option>
+                                    <option value="status_3">已完成</option>
+                                    <option value="status_4">已结算</option>
+                                </select>
+                                <select id="filter-type" class="px-4 py-2 border rounded-lg">
+                                    <option value="">全部类型</option>
+                                    <option value="type_1">漫剧/短剧制作</option>
+                                    <option value="type_2">漫剧/短剧出海</option>
+                                    <option value="type_3">企事业单位福利</option>
+                                    <option value="type_4">智能体服务</option>
+                                </select>
+                            </div>
+                            <button onclick="alert('新建项目功能开发中')" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                <i class="fas fa-plus mr-2"></i>新建项目
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">项目编号</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">项目名称</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">客户</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">类型</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">制作天数</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">预算</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">截止日期</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="projects-list" class="divide-y divide-gray-100">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 客户管理页面 -->
+                <div id="clients-page" class="page hidden">
+                    <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+                        <i class="fas fa-users text-6xl text-gray-300 mb-4"></i>
+                        <h3 class="text-xl font-bold text-gray-700 mb-2">客户管理模块</h3>
+                        <p class="text-gray-500">功能开发中，敬请期待...</p>
+                    </div>
+                </div>
+
+                <!-- 财务统计页面 -->
+                <div id="finance-page" class="page hidden">
+                    <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+                        <i class="fas fa-chart-line text-6xl text-gray-300 mb-4"></i>
+                        <h3 class="text-xl font-bold text-gray-700 mb-2">财务统计模块</h3>
+                        <p class="text-gray-500">功能开发中，敬请期待...</p>
+                    </div>
+                </div>
+
+                <!-- 系统设置页面 -->
+                <div id="settings-page" class="page hidden">
+                    <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+                        <i class="fas fa-cog text-6xl text-gray-300 mb-4"></i>
+                        <h3 class="text-xl font-bold text-gray-700 mb-2">系统设置模块</h3>
+                        <p class="text-gray-500">功能开发中，敬请期待...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 项目详情弹窗 -->
+    <div id="project-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="text-xl font-bold">项目详情</h3>
+                <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="modal-content" class="p-6">
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/data/projects.js"></script>
+    <script>
+        // 页面切换
+        function showPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+            document.getElementById(page + '-page').classList.remove('hidden');
+            document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
+            event.target.closest('.sidebar-item').classList.add('active');
+            
+            const titles = {
+                'dashboard': '数据看板',
+                'projects': '项目管理',
+                'clients': '客户管理',
+                'finance': '财务统计',
+                'settings': '系统设置'
+            };
+            document.getElementById('page-title').textContent = titles[page];
+            
+            if (page === 'projects') {
+                renderProjectsList();
+            }
+        }
+
+        // 获取状态样式
+        function getStatusStyle(status) {
+            const styles = {
+                'status_1': 'bg-gray-100 text-gray-700',
+                'status_2': 'bg-blue-100 text-blue-700',
+                'status_3': 'bg-green-100 text-green-700',
+                'status_4': 'bg-yellow-100 text-yellow-700'
+            };
+            return styles[status] || 'bg-gray-100 text-gray-700';
+        }
+
+        // 获取状态名称
+        function getStatusName(status) {
+            return PROJECT_STATUS[status]?.name || status;
+        }
+
+        // 获取类型名称
+        function getTypeName(type) {
+            return PROJECT_TYPES[type]?.name || type;
+        }
+
+        // 获取优先级样式
+        function getPriorityStyle(priority) {
+            const styles = {
+                'priority_high': 'priority-high',
+                'priority_medium': 'priority-medium',
+                'priority_low': 'priority-low'
+            };
+            return styles[priority] || '';
+        }
+
+        // 获取优先级名称
+        function getPriorityName(priority) {
+            return PRIORITY[priority]?.name || priority;
+        }
+
+        // 渲染统计
+        function renderStats() {
+            const stats = calculateStats();
+            document.getElementById('stat-total').textContent = stats.total;
+            document.getElementById('stat-budget').textContent = stats.totalBudget;
+            document.getElementById('stat-progress').textContent = stats.inProgress;
+            document.getElementById('stat-month').textContent = stats.monthlyStats[stats.monthlyStats.length - 1].count;
+        }
+
+        // 渲染最近项目
+        function renderRecentProjects() {
+            const tbody = document.getElementById('recent-projects');
+            const recent = projectsData.slice(0, 5);
+            tbody.innerHTML = recent.map(project => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 text-sm font-medium text-gray-900">${project.id}</td>
+                    <td class="px-6 py-4 text-sm text-gray-700">${project.name}</td>
+                    <td class="px-6 py-4 text-sm text-gray-700">${project.client}</td>
+                    <td class="px-6 py-4 text-sm text-gray-700">${project.budget}万</td>
+                    <td class="px-6 py-4">
+                        <span class="status-badge ${getStatusStyle(project.status)}">${getStatusName(project.status)}</span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 渲染项目列表
+        function renderProjectsList() {
+            const tbody = document.getElementById('projects-list');
+            tbody.innerHTML = projectsData.map(project => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 text-sm font-medium text-gray-900">${project.id}</td>
+                    <td class="px-6 py-4 text-sm text-gray-700">${project.name}</td>
+                    <td class="px-6 py-4 text-sm text-gray-700">${project.client}</td>
+                    <td class="px-6 py-4 text-sm text-gray-700">${getTypeName(project.type)}</td>
+                    <td class="px-6 py-4 text-sm text-gray-700">${project.duration}天</td>
+                    <td class="px-6 py-4 text-sm text-gray-700">${project.budget}万</td>
+                    <td class="px-6 py-4 text-sm text-gray-700">${project.deadline}</td>
+                    <td class="px-6 py-4">
+                        <span class="status-badge ${getStatusStyle(project.status)}">${getStatusName(project.status)}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <button onclick="showProjectDetail('${project.id}')" class="text-blue-600 hover:text-blue-800 text-sm">
+                            <i class="fas fa-eye mr-1"></i>查看
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 显示项目详情
+        function showProjectDetail(projectId) {
+            const project = projectsData.find(p => p.id === projectId);
+            if (!project) return;
+            
+            const content = document.getElementById('modal-content');
+            content.innerHTML = `
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm text-gray-500">项目编号</label>
+                            <p class="font-medium">${project.id}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-500">项目名称</label>
+                            <p class="font-medium">${project.name}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-500">客户</label>
+                            <p class="font-medium">${project.client}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-500">项目类型</label>
+                            <p class="font-medium">${getTypeName(project.type)}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-500">优先级</label>
+                            <p class="font-medium">
+                                <span class="status-badge ${getPriorityStyle(project.priority)}">${getPriorityName(project.priority)}</span>
+                            </p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-500">制作天数</label>
+                            <p class="font-medium">${project.duration}天</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-500">预算</label>
+                            <p class="font-medium text-green-600">${project.budget}万元</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-500">截止日期</label>
+                            <p class="font-medium">${project.deadline}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-500">状态</label>
+                            <p class="font-medium">
+                                <span class="status-badge ${getStatusStyle(project.status)}">${getStatusName(project.status)}</span>
+                            </p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-500">创建时间</label>
+                            <p class="font-medium">${project.createdAt}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-500">项目描述</label>
+                        <p class="mt-1 text-gray-700">${project.description}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-500">详细需求</label>
+                        <p class="mt-1 text-gray-700 bg-gray-50 p-4 rounded-lg">${project.detail}</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('project-modal').classList.remove('hidden');
+            document.getElementById('project-modal').classList.add('flex');
+        }
+
+        // 关闭弹窗
+        function closeModal() {
+            document.getElementById('project-modal').classList.add('hidden');
+            document.getElementById('project-modal').classList.remove('flex');
+        }
+
+        // 退出登录
+        function logout() {
+            window.location.href = 'login.html';
+        }
+
+        // 初始化图表
+        function initCharts() {
+            const stats = calculateStats();
+            
+            // 类型分布图
+            const typeChart = echarts.init(document.getElementById('typeChart'));
+            typeChart.setOption({
+                tooltip: { trigger: 'item' },
+                legend: { bottom: '5%' },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+                    label: { show: false },
+                    data: [
+                        { value: stats.typeStats.type_1, name: '漫剧/短剧制作', itemStyle: { color: '#3b82f6' } },
+                        { value: stats.typeStats.type_2, name: '漫剧/短剧出海', itemStyle: { color: '#8b5cf6' } },
+                        { value: stats.typeStats.type_3, name: '企事业单位福利', itemStyle: { color: '#10b981' } },
+                        { value: stats.typeStats.type_4, name: '智能体服务', itemStyle: { color: '#f59e0b' } },
+                        { value: stats.typeStats.type_5, name: '其他', itemStyle: { color: '#6b7280' } }
+                    ]
+                }]
+            });
+
+            // 状态分布图
+            const statusChart = echarts.init(document.getElementById('statusChart'));
+            statusChart.setOption({
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                xAxis: { type: 'category', data: ['待启动', '进行中', '已完成', '已结算'] },
+                yAxis: { type: 'value' },
+                series: [{
+                    data: [
+                        { value: stats.statusStats.status_1, itemStyle: { color: '#6b7280' } },
+                        { value: stats.statusStats.status_2, itemStyle: { color: '#3b82f6' } },
+                        { value: stats.statusStats.status_3, itemStyle: { color: '#10b981' } },
+                        { value: stats.statusStats.status_4, itemStyle: { color: '#f59e0b' } }
+                    ],
+                    type: 'bar',
+                    barWidth: '60%'
+                }]
+            });
+
+            // 月度趋势图
+            const monthChart = echarts.init(document.getElementById('monthChart'));
+            monthChart.setOption({
+                tooltip: { trigger: 'axis' },
+                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                xAxis: { type: 'category', boundaryGap: false, data: stats.monthlyStats.map(m => m.month) },
+                yAxis: { type: 'value' },
+                series: [{
+                    data: stats.monthlyStats.map(m => m.count),
+                    type: 'line',
+                    smooth: true,
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(59, 130, 246, 0.3)' },
+                            { offset: 1, color: 'rgba(59, 130, 246, 0.05)' }
+                        ])
+                    },
+                    itemStyle: { color: '#3b82f6' }
+                }]
+            });
+
+            window.addEventListener('resize', () => {
+                typeChart.resize();
+                statusChart.resize();
+                monthChart.resize();
+            });
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            renderStats();
+            renderRecentProjects();
+            initCharts();
+        });
+    </script>
+</body>
+</html>
